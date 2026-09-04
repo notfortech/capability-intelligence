@@ -415,6 +415,19 @@ function showErr(msg) {
   el.classList.add('visible');
 }
 
+// Vercel returns an HTML/text error page (not JSON) on timeouts and
+// platform-level failures, so res.json() throws a confusing SyntaxError.
+// Read the body as text first and only parse it as JSON if it looks like JSON.
+async function parseApiResponse(res) {
+  const raw = await res.text();
+  try {
+    return JSON.parse(raw);
+  } catch (e) {
+    if (res.status === 504) throw new Error('The server took too long to respond. Please try again.');
+    throw new Error(`Server error (${res.status}). Please try again.`);
+  }
+}
+
 // ── Main chart generation ──
 // ── Step indicators ──
 function setStep(n) {
@@ -463,7 +476,7 @@ async function generateReading() {
       body: JSON.stringify({name, dob, tob, lat, lon, tz})
     });
     clearTimeout(t); clearTimeout(t2);
-    const data = await res.json();
+    const data = await parseApiResponse(res);
     if (!data.success) throw new Error(data.error || 'Unknown error');
 
     // Show chart immediately — don't wait for pathways
@@ -504,7 +517,7 @@ async function loadPathwaysAndAssessment(name, chartData) {
         name
       })
     });
-    const pathData = await pathRes.json();
+    const pathData = await parseApiResponse(pathRes);
 
     if (pathData.success) {
       appState.tgaResults = pathData.tgaResults;
@@ -535,7 +548,7 @@ async function loadPathwaysAndAssessment(name, chartData) {
         traits: chartData.traits
       })
     });
-    const assessData = await assessRes.json();
+    const assessData = await parseApiResponse(assessRes);
 
     if (assessData.success) {
       appState.assessmentQuestions = assessData.assessmentQuestions;
@@ -831,7 +844,7 @@ async function submitAssessment(questions) {
         name: appState.name
       })
     });
-    const data = await res.json();
+    const data = await parseApiResponse(res);
     if (!data.success) throw new Error(data.error);
     buildResultsPanel(data.result);
     document.getElementById('resultsTab').style.display = 'block';

@@ -2,7 +2,7 @@
 // Prokerala → planets, kundli, dasha → Claude reading + traits
 // Returns quickly (~15-20s). Frontend calls /api/pathways next.
 
-const { callProkerala, getChartReading } = require('./_helpers');
+const { callProkerala, getChartReading, getToken } = require('./_helpers');
 
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -23,13 +23,20 @@ module.exports = async function handler(req, res) {
       ayanamsa: 1
     };
 
-    // Fetch Prokerala data in parallel
+    // Warm the shared auth token once so the three concurrent calls below
+    // don't race each other into fetching it separately.
+    await getToken();
+
+    // Fetch Prokerala data in parallel. dasha is non-critical, so it's
+    // started alongside planets/kundli (not awaited sequentially after them)
+    // and swallows its own errors instead of blocking the response.
+    const dashaPromise = callProkerala('astrology/vimshottari-dasha', params)
+      .catch(() => ({ body: null }));
     const [planets, kundli] = await Promise.all([
       callProkerala('astrology/planet-position', params),
       callProkerala('astrology/kundli', params)
     ]);
-    let dasha = { body: null };
-    try { dasha = await callProkerala('astrology/vimshottari-dasha', params); } catch(e) {}
+    const dasha = await dashaPromise;
 
     // Claude reading + traits extraction
     const fullReading = await getChartReading(name, planets.body, kundli.body, dasha.body);

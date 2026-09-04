@@ -91,7 +91,10 @@ async function callClaude(messages, maxTokens = 2000) {
     'x-api-key': process.env.ANTHROPIC_API_KEY,
     'anthropic-version': '2023-06-01'
   }, {
-    model: 'claude-sonnet-4-6',
+    model: 'claude-sonnet-5',
+    // Sonnet 5 runs adaptive thinking by default; disable it to keep the
+    // direct, non-reasoning latency these formatted-output calls relied on.
+    thinking: { type: 'disabled' },
     max_tokens: maxTokens,
     messages
   });
@@ -335,7 +338,7 @@ Be honest — do not inflate scores. Low evidence means low score. Specific conc
 }
 
 module.exports = {
-  callProkerala, searchTGA, callClaude,
+  callProkerala, searchTGA, callClaude, getToken,
   getChartReading, extractSearchTerms, fetchTGAResults,
   generatePathways, generateAssessmentQuestions, scoreAssessment
 };
