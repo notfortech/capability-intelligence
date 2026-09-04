@@ -1,0 +1,6 @@
+{
+  "name": "astro-agent",
+  "version": "1.0.0",
+  "description": "Vedic Astrology Career Agent",
+  "engines": { "node": "18.x" }
+}

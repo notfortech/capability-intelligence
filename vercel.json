@@ -1,0 +1,20 @@
+{
+  "version": 2,
+  "builds": [
+    { "src": "api/*.js", "use": "@vercel/node" },
+    { "src": "public/**", "use": "@vercel/static" }
+  ],
+  "routes": [
+    { "src": "/api/chart",      "dest": "/api/chart.js" },
+    { "src": "/api/pathways",   "dest": "/api/pathways.js" },
+    { "src": "/api/assessment", "dest": "/api/assessment.js" },
+    { "src": "/api/score",      "dest": "/api/score.js" },
+    { "src": "/(.*)",           "dest": "/public/$1" }
+  ],
+  "functions": {
+    "api/chart.js":      { "maxDuration": 30 },
+    "api/pathways.js":   { "maxDuration": 30 },
+    "api/assessment.js": { "maxDuration": 30 },
+    "api/score.js":      { "maxDuration": 30 }
+  }
+}

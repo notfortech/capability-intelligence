@@ -1,0 +1,952 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vedic Astrology Career Agent</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Georgia, serif; background: #1C1008; color: #F5E6C8; min-height: 100vh; }
+
+  header { background: #2A1A06; border-bottom: 2px solid #C8780A; padding: 20px; text-align: center; }
+  header h1 { font-size: 22px; color: #F0B840; font-weight: normal; margin-bottom: 4px; }
+  header p { font-size: 11px; color: #8B6030; font-family: sans-serif; letter-spacing: 2px; }
+
+  .container { max-width: 800px; margin: 0 auto; padding: 24px 18px; }
+
+  /* Form */
+  .form-card { background: #241408; border: 1px solid #6B4010; border-radius: 8px; padding: 26px; margin-bottom: 22px; }
+  .form-card h2 { font-size: 14px; color: #E8A030; font-weight: normal; margin-bottom: 18px; font-family: sans-serif; letter-spacing: 1px; }
+  .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 13px; margin-bottom: 13px; }
+  .field-row.three { grid-template-columns: 1fr 1fr 1fr; }
+  .field-row.full { grid-template-columns: 1fr; }
+  .field { display: flex; flex-direction: column; gap: 5px; }
+  label { font-family: sans-serif; font-size: 10px; color: #A08050; letter-spacing: 1.5px; text-transform: uppercase; }
+  input, select { background: #1C1008; border: 1px solid #5A3808; border-radius: 4px; color: #F5E6C8; font-family: sans-serif; font-size: 13px; padding: 9px 11px; outline: none; width: 100%; transition: border-color 0.2s; }
+  input:focus, select:focus { border-color: #C8780A; }
+  select option { background: #1C1008; }
+  .hint { font-family: sans-serif; font-size: 10px; color: #6B5030; }
+
+  .location-search { position: relative; }
+  .location-results { position: absolute; top: 100%; left: 0; right: 0; background: #241408; border: 1px solid #6B4010; border-top: none; border-radius: 0 0 4px 4px; z-index: 10; display: none; max-height: 150px; overflow-y: auto; }
+  .location-results.open { display: block; }
+  .location-result-item { padding: 8px 12px; font-family: sans-serif; font-size: 12px; color: #D0A060; cursor: pointer; border-bottom: 1px solid #3A2408; }
+  .location-result-item:hover { background: #2A1A06; }
+  .coords-display { font-family: sans-serif; font-size: 10px; color: #6B8050; margin-top: 3px; min-height: 14px; }
+
+  button.submit { width: 100%; background: #8B4A00; border: none; border-radius: 4px; color: #F5E6C8; cursor: pointer; font-family: sans-serif; font-size: 13px; letter-spacing: 1px; margin-top: 18px; padding: 13px; transition: background 0.2s; }
+  button.submit:hover { background: #A85C00; }
+  button.submit:disabled { background: #3A2408; color: #6B5030; cursor: not-allowed; }
+
+  .error-msg { background: #2A0808; border: 1px solid #6B0A0A; border-radius: 5px; color: #E06060; display: none; font-family: sans-serif; font-size: 12px; margin-top: 14px; padding: 11px 14px; }
+  .error-msg.visible { display: block; }
+
+  /* Status */
+  .status { text-align: center; padding: 20px; font-family: sans-serif; font-size: 12px; color: #A08050; display: none; }
+  .status.visible { display: block; }
+  .steps { display: flex; justify-content: center; gap: 6px; margin-bottom: 10px; flex-wrap: wrap; }
+  .step { font-family: sans-serif; font-size: 10px; padding: 3px 9px; border-radius: 10px; border: 1px solid #3A2408; color: #6B5030; }
+  .step.active { border-color: #C8780A; color: #E8A030; }
+  .step.done { border-color: #4A7020; color: #7AAA40; }
+  .spinner { display: inline-block; width: 13px; height: 13px; border: 2px solid #6B4010; border-top-color: #C8780A; border-radius: 50%; animation: spin 0.8s linear infinite; vertical-align: middle; margin-right: 5px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Result card */
+  .result-card { background: #241408; border: 1px solid #6B4010; border-radius: 8px; display: none; overflow: hidden; }
+  .result-card.visible { display: block; }
+  .result-header { background: #2A1A06; border-bottom: 1px solid #6B4010; padding: 16px 22px; }
+  .result-header h2 { font-size: 17px; color: #F0B840; font-weight: normal; }
+  .result-header .meta { font-family: sans-serif; font-size: 11px; color: #8B6030; margin-top: 3px; }
+
+  .planets-strip { background: #1C1008; border-bottom: 1px solid #3A2408; display: flex; flex-wrap: wrap; }
+  .planet-chip { border-right: 1px solid #3A2408; padding: 8px 12px; text-align: center; }
+  .planet-chip .p-name { font-family: sans-serif; font-size: 9px; color: #8B6030; letter-spacing: 1px; }
+  .planet-chip .p-pos { font-size: 12px; color: #D0A060; margin-top: 2px; }
+
+  /* Tabs */
+  .tabs { display: flex; border-bottom: 1px solid #3A2408; background: #1C1008; overflow-x: auto; }
+  .tab { padding: 10px 16px; font-family: sans-serif; font-size: 11px; color: #8B6030; cursor: pointer; border-bottom: 2px solid transparent; white-space: nowrap; transition: all 0.2s; }
+  .tab:hover { color: #D0A060; }
+  .tab.active { color: #F0B840; border-bottom-color: #C8780A; }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  /* Reading body */
+  .reading-body { padding: 22px; line-height: 1.9; }
+  .reading-body p { margin-bottom: 12px; font-size: 14px; color: #E0C898; }
+  .reading-body h3 { color: #E8A030; font-size: 13px; font-weight: normal; font-family: sans-serif; margin: 18px 0 7px; padding-bottom: 5px; border-bottom: 1px solid #3A2408; }
+  .reading-body strong { color: #F0B840; font-weight: normal; }
+  .reading-body ul { margin: 6px 0 10px 18px; }
+  .reading-body li { font-size: 14px; color: #E0C898; margin-bottom: 4px; }
+
+  /* Long reading overflow — scroll within tab, no download */
+  .reading-scroll { max-height: 600px; overflow-y: auto; padding-right: 4px; }
+  .reading-scroll::-webkit-scrollbar { width: 5px; }
+  .reading-scroll::-webkit-scrollbar-track { background: #1C1008; }
+  .reading-scroll::-webkit-scrollbar-thumb { background: #5A3808; border-radius: 3px; }
+  .reading-scroll::-webkit-scrollbar-thumb:hover { background: #C8780A; }
+  .reading-long-note { font-family: sans-serif; font-size: 11px; color: #5A4020; text-align: center; padding: 6px; border-top: 1px solid #2A1A06; margin-top: 4px; }
+
+  /* Traits panel */
+  .traits-panel { padding: 22px; }
+  .trait-item { display: flex; gap: 12px; padding: 10px 14px; border: 1px solid #3A2408; border-radius: 5px; margin-bottom: 8px; background: #1C1008; align-items: flex-start; }
+  .trait-num { font-family: sans-serif; font-size: 11px; color: #C8780A; font-weight: bold; min-width: 20px; }
+  .trait-text { font-family: sans-serif; font-size: 13px; color: #D0A060; line-height: 1.5; }
+
+  /* TGA panel */
+  .tga-panel { padding: 22px; }
+  .tga-label { font-family: sans-serif; font-size: 10px; color: #C8780A; letter-spacing: 2px; text-transform: uppercase; margin: 16px 0 8px; }
+  .tga-label:first-child { margin-top: 0; }
+  .comp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 6px; }
+  .comp-card { background: #1C1008; border: 1px solid #3A2408; border-radius: 5px; padding: 10px 12px; text-decoration: none; display: block; transition: border-color 0.2s; }
+  .comp-card:hover { border-color: #C8780A; }
+  .comp-code { font-family: sans-serif; font-size: 10px; color: #C8780A; }
+  .comp-title { font-family: sans-serif; font-size: 12px; color: #D0A060; margin-top: 3px; line-height: 1.4; }
+  .comp-type { font-family: sans-serif; font-size: 10px; color: #5A4020; margin-top: 3px; }
+  .tga-note { background: #1A2808; border: 1px solid #3A5010; border-radius: 5px; font-family: sans-serif; font-size: 11px; color: #7AAA40; padding: 10px 14px; margin-top: 14px; line-height: 1.6; }
+  .tga-link { display: inline-block; margin-top: 10px; font-family: sans-serif; font-size: 11px; color: #C8780A; text-decoration: none; }
+  .tga-link:hover { color: #F0B840; }
+  .no-results { font-family: sans-serif; font-size: 12px; color: #5A4020; font-style: italic; padding: 4px 0; }
+
+  /* ── ASSESSMENT PANEL ── */
+  .assess-panel { padding: 22px; }
+
+  .assess-intro { background: #1C1008; border: 1px solid #3A2408; border-radius: 6px; padding: 16px 18px; margin-bottom: 20px; }
+  .assess-intro h3 { font-family: sans-serif; font-size: 14px; color: #E8A030; font-weight: normal; margin-bottom: 8px; }
+  .assess-intro p { font-family: sans-serif; font-size: 12px; color: #A08050; line-height: 1.7; }
+
+  .cluster-card { border: 1px solid #3A2408; border-radius: 7px; margin-bottom: 18px; overflow: hidden; }
+  .cluster-header { background: #2A1A06; padding: 14px 18px; border-bottom: 1px solid #3A2408; }
+  .cluster-title { font-family: sans-serif; font-size: 14px; color: #F0B840; margin-bottom: 3px; }
+  .cluster-comp { font-family: sans-serif; font-size: 11px; color: #C8780A; }
+  .cluster-desc { font-family: sans-serif; font-size: 12px; color: #8B6030; margin-top: 4px; }
+
+  .question-block { padding: 14px 18px; border-bottom: 1px solid #2A1A06; }
+  .question-block:last-child { border-bottom: none; }
+  .question-text { font-family: sans-serif; font-size: 13px; color: #D0A060; margin-bottom: 10px; line-height: 1.5; }
+
+  /* Rating scale */
+  .rating-scale { display: flex; gap: 6px; margin-bottom: 10px; flex-wrap: wrap; }
+  .rating-btn { background: #1C1008; border: 1px solid #3A2408; border-radius: 4px; color: #8B6030; cursor: pointer; font-family: sans-serif; font-size: 10px; padding: 5px 8px; text-align: center; transition: all 0.2s; flex: 1; min-width: 80px; line-height: 1.3; }
+  .rating-btn:hover { border-color: #C8780A; color: #D0A060; }
+  .rating-btn.selected { background: #3A2408; border-color: #C8780A; color: #F0B840; }
+
+  /* Evidence input */
+  .evidence-prompt { font-family: sans-serif; font-size: 11px; color: #6B5030; margin-bottom: 5px; font-style: italic; }
+  textarea.evidence-input { background: #1C1008; border: 1px solid #3A2408; border-radius: 4px; color: #D0A060; font-family: sans-serif; font-size: 12px; padding: 8px 10px; width: 100%; resize: vertical; min-height: 56px; outline: none; transition: border-color 0.2s; }
+  textarea.evidence-input:focus { border-color: #6B4010; }
+  textarea.evidence-input::placeholder { color: #4A3010; }
+
+  .assess-submit-btn { width: 100%; background: #4A7020; border: none; border-radius: 5px; color: #E8F0D0; cursor: pointer; font-family: sans-serif; font-size: 13px; letter-spacing: 1px; margin-top: 8px; padding: 13px; transition: background 0.2s; }
+  .assess-submit-btn:hover { background: #5A8A28; }
+  .assess-submit-btn:disabled { background: #2A3A18; color: #4A5A28; cursor: not-allowed; }
+
+  .assess-progress { font-family: sans-serif; font-size: 11px; color: #8B6030; text-align: center; margin-top: 8px; }
+
+  /* ── RESULTS PANEL ── */
+  .results-panel { padding: 22px; }
+
+  .overall-score { text-align: center; padding: 24px; background: #1C1008; border: 1px solid #3A2408; border-radius: 8px; margin-bottom: 20px; }
+  .score-circle { width: 90px; height: 90px; border-radius: 50%; margin: 0 auto 12px; display: flex; align-items: center; justify-content: flex-end; flex-direction: column; padding-bottom: 14px; font-family: sans-serif; }
+  .score-pct { font-size: 28px; font-weight: bold; }
+  .score-label { font-size: 11px; letter-spacing: 1px; margin-top: 2px; }
+  .overall-level { font-family: sans-serif; font-size: 16px; color: #F0B840; margin-bottom: 8px; }
+  .overall-summary { font-family: sans-serif; font-size: 13px; color: #A08050; line-height: 1.7; max-width: 500px; margin: 0 auto; }
+
+  .cluster-result { border: 1px solid #3A2408; border-radius: 7px; margin-bottom: 14px; overflow: hidden; }
+  .cluster-result-header { padding: 12px 16px; display: flex; align-items: center; gap: 12px; }
+  .cluster-score-bar-wrap { flex: 1; background: #1C1008; border-radius: 4px; height: 8px; overflow: hidden; }
+  .cluster-score-bar { height: 8px; border-radius: 4px; transition: width 0.8s ease; }
+  .cluster-score-pct { font-family: sans-serif; font-size: 13px; font-weight: bold; min-width: 36px; text-align: right; }
+  .cluster-result-title { font-family: sans-serif; font-size: 13px; color: #D0A060; min-width: 160px; }
+  .cluster-result-body { padding: 14px 16px; border-top: 1px solid #2A1A06; }
+
+  .result-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+  .result-box { background: #1C1008; border-radius: 5px; padding: 10px 12px; }
+  .result-box-label { font-family: sans-serif; font-size: 10px; color: #6B5030; letter-spacing: 1px; margin-bottom: 6px; text-transform: uppercase; }
+  .result-box ul { list-style: disc; margin-left: 14px; }
+  .result-box li { font-family: sans-serif; font-size: 12px; color: #A08050; margin-bottom: 4px; line-height: 1.4; }
+
+  .rpl-badge { display: inline-block; font-family: sans-serif; font-size: 10px; padding: 2px 8px; border-radius: 8px; margin-left: 8px; }
+  .rpl-high { background: #1A3A08; color: #7AAA40; }
+  .rpl-medium { background: #3A2A08; color: #C8A040; }
+  .rpl-low { background: #3A1A08; color: #C86040; }
+
+  .cluster-recommendation { font-family: sans-serif; font-size: 12px; color: #D0A060; background: #2A1A06; border-left: 3px solid #C8780A; padding: 10px 14px; border-radius: 0 5px 5px 0; margin-top: 4px; line-height: 1.6; }
+
+  .priority-actions { background: #1A2808; border: 1px solid #3A5010; border-radius: 6px; padding: 16px 18px; margin-top: 16px; }
+  .priority-actions h4 { font-family: sans-serif; font-size: 12px; color: #7AAA40; margin-bottom: 10px; letter-spacing: 1px; }
+  .action-item { display: flex; gap: 10px; margin-bottom: 8px; align-items: flex-start; }
+  .action-num { font-family: sans-serif; font-size: 11px; color: #4A7020; font-weight: bold; min-width: 18px; }
+  .action-text { font-family: sans-serif; font-size: 13px; color: #A0C070; line-height: 1.5; }
+
+  .study-rec { background: #2A1A06; border: 1px solid #6B4010; border-radius: 6px; padding: 14px 16px; margin-top: 12px; }
+  .study-rec-label { font-family: sans-serif; font-size: 10px; color: #C8780A; letter-spacing: 1px; margin-bottom: 6px; text-transform: uppercase; }
+  .study-rec-text { font-family: sans-serif; font-size: 13px; color: #D0A060; line-height: 1.6; }
+
+  .new-btn { background: none; border: 1px solid #5A3808; border-radius: 4px; color: #A08050; cursor: pointer; font-family: sans-serif; font-size: 11px; margin: 14px 22px 22px; padding: 8px 16px; transition: all 0.2s; display: block; }
+  .new-btn:hover { border-color: #C8780A; color: #E8A030; }
+
+  .disclaimer { font-family: sans-serif; font-size: 10px; color: #4A3818; text-align: center; margin-top: 18px; line-height: 1.6; }
+
+  @media (max-width: 520px) {
+    .field-row, .field-row.three { grid-template-columns: 1fr; }
+    .comp-grid, .result-row { grid-template-columns: 1fr; }
+    .rating-scale { gap: 4px; }
+    .rating-btn { font-size: 9px; padding: 4px 5px; }
+    .cluster-result-header { flex-wrap: wrap; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>✦ Vedic Astrology Career Agent ✦</h1>
+  <p>Prokerala · Claude AI · training.gov.au</p>
+</header>
+
+<div class="container">
+
+  <!-- FORM -->
+  <div class="form-card" id="formCard">
+    <h2>Birth Details</h2>
+    <div class="field-row full">
+      <div class="field">
+        <label>Full Name</label>
+        <input type="text" id="name" placeholder="Name (optional)">
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label>Date of Birth</label>
+        <input type="date" id="dob" required>
+      </div>
+      <div class="field">
+        <label>Time of Birth</label>
+        <input type="time" id="tob" required>
+        <span class="hint">24-hour format</span>
+      </div>
+    </div>
+    <div class="field-row full">
+      <div class="field">
+        <label>Place of Birth</label>
+        <div class="location-search">
+          <input type="text" id="locationSearch" placeholder="Search city..." autocomplete="off">
+          <div class="location-results" id="locationResults"></div>
+        </div>
+        <div class="coords-display" id="coordsDisplay"></div>
+      </div>
+    </div>
+    <div class="field-row three">
+      <div class="field">
+        <label>Latitude</label>
+        <input type="number" id="lat" placeholder="e.g. 13.0827" step="0.0001" required>
+      </div>
+      <div class="field">
+        <label>Longitude</label>
+        <input type="number" id="lon" placeholder="e.g. 80.2707" step="0.0001" required>
+      </div>
+      <div class="field">
+        <label>UTC Offset</label>
+        <select id="tz">
+          <option value="+05:30">+05:30 India</option>
+          <option value="+10:00">+10:00 AEST</option>
+          <option value="+11:00">+11:00 AEDT</option>
+          <option value="+09:30">+09:30 ACST</option>
+          <option value="+08:00">+08:00 AWST/SGT</option>
+          <option value="+00:00">+00:00 UTC</option>
+          <option value="+01:00">+01:00 CET</option>
+          <option value="-05:00">-05:00 EST</option>
+          <option value="-08:00">-08:00 PST</option>
+          <option value="+04:00">+04:00 GST</option>
+          <option value="+07:00">+07:00 WIB</option>
+        </select>
+      </div>
+    </div>
+    <div class="error-msg" id="errorMsg"></div>
+    <button class="submit" id="submitBtn" onclick="generateReading()">Generate Reading</button>
+  </div>
+
+  <!-- STATUS -->
+  <div class="status" id="statusMsg">
+    <div class="steps">
+      <div class="step" id="s1">Planets</div>
+      <div class="step" id="s2">Chart reading</div>
+      <div class="step" id="s3">Traits</div>
+    </div>
+    <span class="spinner"></span><span id="statusText">Connecting...</span>
+  </div>
+  <!-- Secondary status shown after chart loads — inside result card area -->
+  <div class="status" id="statusMsg2" style="display:none;margin-top:0;padding:10px;">
+    <div class="steps">
+      <div class="step" id="s4">training.gov.au</div>
+      <div class="step" id="s5">Pathways</div>
+      <div class="step" id="s6">Assessment</div>
+    </div>
+    <span class="spinner"></span><span id="statusText2">Loading pathways...</span>
+  </div>
+
+  <!-- RESULTS -->
+  <div class="result-card" id="resultCard">
+    <div class="result-header">
+      <h2 id="resultName">Vedic Career Reading</h2>
+      <div class="meta" id="resultMeta"></div>
+    </div>
+    <div class="planets-strip" id="planetsStrip"></div>
+    <div class="tabs">
+      <div class="tab active" onclick="switchTab('chart')">Chart Reading</div>
+      <div class="tab" onclick="switchTab('traits')">Skills & Traits</div>
+      <div class="tab" onclick="switchTab('pathways')">AU Pathways</div>
+      <div class="tab" onclick="switchTab('quals')">Qualifications</div>
+      <div class="tab" onclick="switchTab('assess')">Skills Assessment</div>
+      <div class="tab" id="resultsTab" style="display:none" onclick="switchTab('results')">My Results</div>
+    </div>
+
+    <div class="tab-content active" id="tab-chart">
+      <div class="reading-body" id="readingBody"></div>
+    </div>
+
+    <div class="tab-content" id="tab-traits">
+      <div class="traits-panel" id="traitsPanel"></div>
+    </div>
+
+    <div class="tab-content" id="tab-pathways">
+      <div class="reading-body" id="pathwaysBody"></div>
+    </div>
+
+    <div class="tab-content" id="tab-quals">
+      <div class="tga-panel" id="tgaPanel"></div>
+    </div>
+
+    <div class="tab-content" id="tab-assess">
+      <div class="assess-panel" id="assessPanel"></div>
+    </div>
+
+    <div class="tab-content" id="tab-results">
+      <div class="results-panel" id="resultsPanel"></div>
+    </div>
+
+    <button class="new-btn" onclick="resetForm()">← New Reading</button>
+  </div>
+
+  <p class="disclaimer">No data stored. Qualifications from training.gov.au only. Self-assessment is indicative — not a formal RPL assessment.<br>Consult a registered RTO for formal recognition of prior learning.</p>
+</div>
+
+<script>
+// ── App state ──
+let appState = {
+  name: '',
+  assessmentQuestions: null,
+  tgaResults: null,
+  responses: {},
+  scored: false
+};
+
+// ── Location search ──
+let locTimeout;
+document.getElementById('locationSearch').addEventListener('input', e => {
+  clearTimeout(locTimeout);
+  const q = e.target.value.trim();
+  if (q.length < 3) { document.getElementById('locationResults').classList.remove('open'); return; }
+  locTimeout = setTimeout(() => searchLoc(q), 400);
+});
+document.addEventListener('click', e => {
+  const lr = document.getElementById('locationResults');
+  if (!e.target.closest('.location-search')) lr.classList.remove('open');
+});
+
+async function searchLoc(q) {
+  try {
+    const r = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=5`, { headers: {'Accept-Language':'en'} });
+    const data = await r.json();
+    const lr = document.getElementById('locationResults');
+    lr.innerHTML = '';
+    if (!data.length) {
+      lr.innerHTML = '<div class="location-result-item" style="color:#6B5030">No results — enter coordinates manually</div>';
+    } else {
+      data.forEach(p => {
+        const d = document.createElement('div');
+        d.className = 'location-result-item';
+        d.textContent = p.display_name;
+        d.onclick = () => pickLoc(p);
+        lr.appendChild(d);
+      });
+    }
+    lr.classList.add('open');
+  } catch(e) {}
+}
+
+function pickLoc(p) {
+  document.getElementById('locationSearch').value = p.display_name.split(',').slice(0,3).join(',');
+  document.getElementById('lat').value = parseFloat(p.lat).toFixed(4);
+  document.getElementById('lon').value = parseFloat(p.lon).toFixed(4);
+  document.getElementById('coordsDisplay').textContent = `✓ ${parseFloat(p.lat).toFixed(4)}°, ${parseFloat(p.lon).toFixed(4)}°`;
+  document.getElementById('locationResults').classList.remove('open');
+  const off = Math.round(parseFloat(p.lon)/15);
+  const target = `${off>=0?'+':'-'}${String(Math.abs(off)).padStart(2,'0')}:00`;
+  const sel = document.getElementById('tz');
+  for (let o of sel.options) { if (o.value === target) { sel.value = target; break; } }
+}
+
+// ── Tabs ──
+const tabNames = ['chart','traits','pathways','quals','assess','results'];
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach((t,i) => {
+    t.className = tabNames[i] === name ? 'tab active' : 'tab';
+  });
+  document.querySelectorAll('.tab-content').forEach(c => c.className = 'tab-content');
+  document.getElementById(`tab-${name}`).className = 'tab-content active';
+}
+
+// ── Format reading text ──
+function fmt(text) {
+  return text
+    .replace(/^#{1,3}\s*(.+)$/gm, '<h3>$1</h3>')
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/^[-•]\s(.+)$/gm, '<li>$1</li>')
+    .replace(/(<li>[\s\S]*?<\/li>\n?)+/g, m => `<ul>${m}</ul>`)
+    .replace(/\n\n/g, '</p><p>')
+    .replace(/\n/g, '<br>');
+}
+
+function showErr(msg) {
+  const el = document.getElementById('errorMsg');
+  el.textContent = msg;
+  el.classList.add('visible');
+}
+
+// ── Main chart generation ──
+// ── Step indicators ──
+function setStep(n) {
+  for (let i = 1; i <= 3; i++) {
+    const el = document.getElementById(`s${i}`);
+    if (el) el.className = i < n ? 'step done' : i === n ? 'step active' : 'step';
+  }
+}
+function setStep2(n) {
+  for (let i = 4; i <= 6; i++) {
+    const el = document.getElementById(`s${i}`);
+    if (el) el.className = i < n ? 'step done' : i === n ? 'step active' : 'step';
+  }
+}
+
+function setStatus(text, step) { setStep(step); document.getElementById('statusText').textContent = text; }
+function setStatus2(text, step) { setStep2(step); document.getElementById('statusText2').textContent = text; }
+
+// ── STEP 1 — chart reading ──
+async function generateReading() {
+  document.getElementById('errorMsg').classList.remove('visible');
+  const name = document.getElementById('name').value.trim();
+  const dob  = document.getElementById('dob').value;
+  const tob  = document.getElementById('tob').value;
+  const lat  = document.getElementById('lat').value;
+  const lon  = document.getElementById('lon').value;
+  const tz   = document.getElementById('tz').value;
+
+  if (!dob) { showErr('Please enter a date of birth.'); return; }
+  if (!tob) { showErr('Please enter a time of birth.'); return; }
+  if (!lat || !lon) { showErr('Please enter a location.'); return; }
+
+  appState.name = name;
+  document.getElementById('submitBtn').disabled = true;
+  document.getElementById('formCard').style.opacity = '0.5';
+  document.getElementById('statusMsg').classList.add('visible');
+
+  setStatus('Fetching planetary positions from Prokerala...', 1);
+  const t = setTimeout(() => setStatus('Generating Vedic chart reading...', 2), 5000);
+  const t2 = setTimeout(() => setStatus('Extracting skills and traits...', 3), 12000);
+
+  try {
+    const res = await fetch('/api/chart', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({name, dob, tob, lat, lon, tz})
+    });
+    clearTimeout(t); clearTimeout(t2);
+    const data = await res.json();
+    if (!data.success) throw new Error(data.error || 'Unknown error');
+
+    // Show chart immediately — don't wait for pathways
+    document.getElementById('statusMsg').classList.remove('visible');
+    showChartResults(name, dob, tob, lat, lon, data);
+
+    // Step 2 + 3 run in background after chart is visible
+    loadPathwaysAndAssessment(name, data);
+
+  } catch(err) {
+    clearTimeout(t); clearTimeout(t2);
+    document.getElementById('statusMsg').classList.remove('visible');
+    document.getElementById('submitBtn').disabled = false;
+    document.getElementById('formCard').style.opacity = '1';
+    showErr(err.message.includes('fetch') ? 'Could not connect to the server. Please try again.' : err.message);
+  }
+}
+
+// ── STEP 2+3 — pathways and assessment in background ──
+async function loadPathwaysAndAssessment(name, chartData) {
+  const status2 = document.getElementById('statusMsg2');
+  status2.style.display = 'block';
+  setStatus2('Searching training.gov.au...', 4);
+
+  // Show loading placeholders in tabs
+  document.getElementById('pathwaysBody').innerHTML = '<div class="reading-body" style="padding:22px"><p style="font-family:sans-serif;font-size:13px;color:#6B5030;">Loading Australian career pathways...</p></div>';
+  document.getElementById('tgaPanel').innerHTML = '<div style="padding:22px;font-family:sans-serif;font-size:13px;color:#6B5030;">Searching training.gov.au...</div>';
+  document.getElementById('assessPanel').innerHTML = '<div style="padding:22px;font-family:sans-serif;font-size:13px;color:#6B5030;">Assessment questions loading...</div>';
+
+  try {
+    // STEP 2 — pathways
+    const pathRes = await fetch('/api/pathways', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        traits: chartData.traits,
+        reading: chartData.reading,
+        name
+      })
+    });
+    const pathData = await pathRes.json();
+
+    if (pathData.success) {
+      appState.tgaResults = pathData.tgaResults;
+
+      // Populate pathways tab
+      const pathwaysHtml = `<p>${fmt(pathData.pathways||'')}</p>`;
+      const pathwaysBody = document.getElementById('pathwaysBody');
+      pathwaysBody.innerHTML = `<div class="reading-scroll">${pathwaysHtml}</div>`;
+      if ((pathData.pathways||'').length > 2000) {
+        const pnote = document.createElement('div');
+        pnote.className = 'reading-long-note';
+        pnote.textContent = 'Scroll to read the full pathways ↑↓';
+        pathwaysBody.appendChild(pnote);
+      }
+
+      // Populate TGA tab
+      buildTGAPanel(pathData.tgaResults, pathData.searchTerms);
+    }
+
+    // STEP 3 — assessment questions
+    setStatus2('Generating skills assessment...', 6);
+
+    const assessRes = await fetch('/api/assessment', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        tgaResults: pathData.tgaResults || {},
+        traits: chartData.traits
+      })
+    });
+    const assessData = await assessRes.json();
+
+    if (assessData.success) {
+      appState.assessmentQuestions = assessData.assessmentQuestions;
+      buildAssessmentPanel(assessData.assessmentQuestions);
+    }
+
+    status2.style.display = 'none';
+
+  } catch(err) {
+    status2.style.display = 'none';
+    console.error('Background load error:', err.message);
+    // Don't show an error — chart reading is already visible and useful
+    document.getElementById('pathwaysBody').innerHTML = '<div class="reading-body" style="padding:22px"><p style="font-family:sans-serif;font-size:13px;color:#6B5030;">Could not load pathways. Please check your connection and refresh.</p></div>';
+  }
+}
+
+// ── Render all results ──
+function showChartResults(name, dob, tob, lat, lon, data) {
+  appState.responses = {};
+
+  document.getElementById('resultName').textContent = name ? `Reading for ${name}` : 'Vedic Career Reading';
+  document.getElementById('resultMeta').textContent = `${dob} · ${tob} · ${lat}°, ${lon}°`;
+
+  // Planets
+  const strip = document.getElementById('planetsStrip');
+  strip.innerHTML = '';
+  const sym = {Sun:'☀',Moon:'☽',Mars:'♂',Mercury:'☿',Jupiter:'♃',Venus:'♀',Saturn:'♄',Rahu:'☊',Ketu:'☋'};
+  (data.planets?.data?.planet_position || []).forEach(p => {
+    const c = document.createElement('div');
+    c.className = 'planet-chip';
+    c.innerHTML = `<div class="p-name">${sym[p.name]||''} ${p.name}</div><div class="p-pos">${p.sign||''} ${p.degree?Math.floor(p.degree)+'°':''}</div>`;
+    strip.appendChild(c);
+  });
+
+  // Chart reading — scrollable, no truncation, no download
+  const readingHtml = `<p>${fmt(data.reading||'')}</p>`;
+  const readingBody = document.getElementById('readingBody');
+  readingBody.innerHTML = `<div class="reading-scroll">${readingHtml}</div>`;
+  // Only show scroll note if content is actually long enough to overflow
+  if ((data.reading||'').length > 2000) {
+    const note = document.createElement('div');
+    note.className = 'reading-long-note';
+    note.textContent = 'Scroll to read the full reading ↑↓';
+    readingBody.appendChild(note);
+  }
+
+  // Traits
+  const tp = document.getElementById('traitsPanel');
+  tp.innerHTML = '<h3 style="color:#E8A030;font-size:14px;font-weight:normal;font-family:sans-serif;margin-bottom:14px;padding-bottom:5px;border-bottom:1px solid #3A2408;">Chart-Identified Professional Skills & Traits</h3>';
+  if (data.traits && data.traits.trim()) {
+    const rawTraits = data.traits.trim();
+
+    // Parse traits from any list format Claude might return:
+    // "1. trait", "1) trait", "- trait", "• trait", "* trait", bold lines
+    const lines = rawTraits.split('\n');
+    const traits = [];
+
+    lines.forEach(line => {
+      let text = line.trim();
+      if (!text) return;
+      // Strip common list prefixes
+      text = text
+        .replace(/^\*\*(.+)\*\*$/, '$1')   // bold entire line
+        .replace(/^\d+[\.\)]\s*/, '')        // "1. " or "1) "
+        .replace(/^[-•\*]\s+/, '')           // "- " or "• " or "* "
+        .replace(/\*\*/g, '')                // remaining bold markers
+        .trim();
+      // Skip headings, empty lines, or very short lines
+      if (text.length > 15 && !/^(skills|traits|professional|here are)/i.test(text)) {
+        traits.push(text);
+      }
+    });
+
+    if (traits.length) {
+      traits.forEach((text, i) => {
+        const el = document.createElement('div');
+        el.className = 'trait-item';
+        el.innerHTML = `<span class="trait-num">${i+1}</span><span class="trait-text">${text}</span>`;
+        tp.appendChild(el);
+      });
+    } else {
+      // Fallback — just show the raw text if parsing fails
+      const fallback = document.createElement('div');
+      fallback.style.cssText = 'font-family:sans-serif;font-size:13px;color:#D0A060;line-height:1.8;white-space:pre-wrap;';
+      fallback.textContent = rawTraits;
+      tp.appendChild(fallback);
+    }
+
+    const note = document.createElement('p');
+    note.style.cssText = 'font-family:sans-serif;font-size:11px;color:#5A4020;margin-top:14px;line-height:1.6;';
+    note.textContent = 'These traits were derived from your planetary positions and used to search training.gov.au for matching competencies.';
+    tp.appendChild(note);
+  } else {
+    const empty = document.createElement('p');
+    empty.style.cssText = 'font-family:sans-serif;font-size:13px;color:#5A4020;padding:8px 0;';
+    empty.textContent = 'Traits were not extracted this session. They are visible in the Australian Pathways tab.';
+    tp.appendChild(empty);
+  }
+
+  document.getElementById('formCard').style.display = 'none';
+  document.getElementById('resultCard').classList.add('visible');
+}
+
+// ── Build TGA panel ──
+function buildTGAPanel(tga, searchTerms) {
+  const panel = document.getElementById('tgaPanel');
+  panel.innerHTML = '';
+
+  function addSection(label, items) {
+    const lbl = document.createElement('div');
+    lbl.className = 'tga-label';
+    lbl.textContent = label;
+    panel.appendChild(lbl);
+    if (!items?.length) {
+      const nr = document.createElement('p');
+      nr.className = 'no-results';
+      nr.textContent = 'Search training.gov.au directly for current results.';
+      panel.appendChild(nr);
+      return;
+    }
+    const grid = document.createElement('div');
+    grid.className = 'comp-grid';
+    items.forEach(q => {
+      const a = document.createElement('a');
+      a.className = 'comp-card';
+      a.href = q.url || `https://training.gov.au/search?q=${encodeURIComponent(q.code)}`;
+      a.target = '_blank';
+      a.innerHTML = `<div class="comp-code">${q.code||'—'}</div><div class="comp-title">${q.title||''}</div><div class="comp-type">${q.type||''}</div>`;
+      grid.appendChild(a);
+    });
+    panel.appendChild(grid);
+  }
+
+  addSection('Qualifications', tga?.qualifications);
+  addSection('Skill Sets', tga?.skillSets);
+  addSection('Units of Competency', tga?.units);
+
+  const note = document.createElement('div');
+  note.className = 'tga-note';
+  note.textContent = 'All results sourced from training.gov.au — Australian Government National Register for Training. Click any card to view full details.';
+  panel.appendChild(note);
+
+  const link = document.createElement('a');
+  link.href = 'https://training.gov.au/search';
+  link.className = 'tga-link';
+  link.target = '_blank';
+  link.textContent = '→ Search all qualifications on training.gov.au';
+  panel.appendChild(link);
+}
+
+// ── Build assessment panel ──
+function buildAssessmentPanel(questions) {
+  const panel = document.getElementById('assessPanel');
+  panel.innerHTML = '';
+
+  if (!questions?.clusters?.length) {
+    panel.innerHTML = '<div class="reading-body"><p style="color:#6B5030;font-family:sans-serif;font-size:13px;">Assessment questions could not be generated. Please try again.</p></div>';
+    return;
+  }
+
+  // Intro
+  const intro = document.createElement('div');
+  intro.className = 'assess-intro';
+  intro.innerHTML = `
+    <h3>Skills Self-Assessment</h3>
+    <p>Rate each skill area and provide a brief real example. Your responses are evaluated against Australian vocational competency standards to show which qualifications you are already partially or fully ready for — and where gaps exist.</p>
+    <p style="margin-top:8px;color:#6B5030;">This is a self-assessment only — not a formal RPL determination. A registered RTO makes formal assessments.</p>`;
+  panel.appendChild(intro);
+
+  // Clusters
+  questions.clusters.forEach(cluster => {
+    const card = document.createElement('div');
+    card.className = 'cluster-card';
+    card.innerHTML = `
+      <div class="cluster-header">
+        <div class="cluster-title">${cluster.title}</div>
+        <div class="cluster-comp">${cluster.competencyCode} — ${cluster.competencyTitle}</div>
+        <div class="cluster-desc">${cluster.description}</div>
+      </div>`;
+
+    cluster.questions.forEach((q, qi) => {
+      const block = document.createElement('div');
+      block.className = 'question-block';
+
+      // Question text
+      const qtext = document.createElement('div');
+      qtext.className = 'question-text';
+      qtext.textContent = `${qi+1}. ${q.text}`;
+      block.appendChild(qtext);
+
+      // Rating scale
+      const scale = document.createElement('div');
+      scale.className = 'rating-scale';
+      (q.ratingLabels || ['Never','Once or twice','Sometimes','Regularly','Core strength']).forEach((label, ri) => {
+        const btn = document.createElement('button');
+        btn.className = 'rating-btn';
+        btn.textContent = label;
+        btn.onclick = () => {
+          scale.querySelectorAll('.rating-btn').forEach(b => b.classList.remove('selected'));
+          btn.classList.add('selected');
+          if (!appState.responses[q.id]) appState.responses[q.id] = {};
+          appState.responses[q.id].rating = ri;
+          updateProgress(questions);
+        };
+        scale.appendChild(btn);
+      });
+      block.appendChild(scale);
+
+      // Evidence
+      const eprompt = document.createElement('div');
+      eprompt.className = 'evidence-prompt';
+      eprompt.textContent = q.evidencePrompt || 'Briefly describe a specific example:';
+      block.appendChild(eprompt);
+
+      const textarea = document.createElement('textarea');
+      textarea.className = 'evidence-input';
+      textarea.placeholder = 'Describe a real situation, project, or task that demonstrates this skill...';
+      textarea.rows = 2;
+      textarea.oninput = () => {
+        if (!appState.responses[q.id]) appState.responses[q.id] = {};
+        appState.responses[q.id].evidence = textarea.value;
+      };
+      block.appendChild(textarea);
+
+      card.appendChild(block);
+    });
+
+    panel.appendChild(card);
+  });
+
+  // Submit button
+  const submitBtn = document.createElement('button');
+  submitBtn.className = 'assess-submit-btn';
+  submitBtn.id = 'assessSubmitBtn';
+  submitBtn.textContent = 'Evaluate My Skills →';
+  submitBtn.onclick = () => submitAssessment(questions);
+  panel.appendChild(submitBtn);
+
+  const prog = document.createElement('div');
+  prog.className = 'assess-progress';
+  prog.id = 'assessProgress';
+  prog.textContent = 'Rate each question and add examples, then click Evaluate.';
+  panel.appendChild(prog);
+}
+
+function updateProgress(questions) {
+  const allIds = questions.clusters.flatMap(c => c.questions.map(q => q.id));
+  const total = allIds.length;
+  const answered = allIds.filter(id => appState.responses[id]?.rating !== undefined).length;
+  const pct = Math.round((answered / total) * 100);
+  const prog = document.getElementById('assessProgress');
+  if (prog) {
+    prog.textContent = answered === total
+      ? `All ${total} questions rated ✓ — ready to evaluate`
+      : `${answered} of ${total} questions rated (${pct}%) — rate all before submitting`;
+  }
+}
+
+// ── Submit assessment for scoring ──
+async function submitAssessment(questions) {
+  const btn = document.getElementById('assessSubmitBtn');
+  if (!btn) return;
+
+  // Check minimum responses
+  // Count only questions that were actually rendered on screen
+  const allRenderedQIds = questions.clusters.flatMap(c => c.questions.map(q => q.id));
+  const totalQ = allRenderedQIds.length;
+  const answered = allRenderedQIds.filter(id => appState.responses[id]?.rating !== undefined).length;
+  const unanswered = totalQ - answered;
+
+  if (unanswered > 0) {
+    alert(`Please rate all ${totalQ} questions before evaluating. You have ${unanswered} question${unanswered > 1 ? 's' : ''} still to rate.`);
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Evaluating your responses...';
+
+  const allComps = [
+    ...(appState.tgaResults?.qualifications || []).slice(0,2),
+    ...(appState.tgaResults?.skillSets || []).slice(0,1),
+    ...(appState.tgaResults?.units || []).slice(0,2)
+  ].filter(c => c.code);
+
+  try {
+    const res = await fetch('/api/score', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        questions,
+        responses: appState.responses,
+        competencies: allComps,
+        name: appState.name
+      })
+    });
+    const data = await res.json();
+    if (!data.success) throw new Error(data.error);
+    buildResultsPanel(data.result);
+    document.getElementById('resultsTab').style.display = 'block';
+    switchTab('results');
+    appState.scored = true;
+  } catch(err) {
+    btn.disabled = false;
+    btn.textContent = 'Evaluate My Skills →';
+    alert('Scoring failed: ' + err.message);
+  }
+}
+
+// ── Build results panel ──
+function buildResultsPanel(result) {
+  const panel = document.getElementById('resultsPanel');
+  panel.innerHTML = '';
+
+  // Overall score
+  const pct = parseInt(result.overallReadiness) || 0;
+  const level = result.overallLevel || 'Developing';
+  const colour = pct >= 75 ? '#7AAA40' : pct >= 50 ? '#C8A040' : pct >= 25 ? '#C87840' : '#C86040';
+  const bgColour = pct >= 75 ? '#1A3A08' : pct >= 50 ? '#3A2A08' : pct >= 25 ? '#3A2008' : '#3A0808';
+
+  const overall = document.createElement('div');
+  overall.className = 'overall-score';
+  overall.innerHTML = `
+    <div class="score-circle" style="background:${bgColour};border:3px solid ${colour};">
+      <div class="score-pct" style="color:${colour}">${pct}%</div>
+      <div class="score-label" style="color:${colour}">READY</div>
+    </div>
+    <div class="overall-level">${level}</div>
+    <div class="overall-summary">${result.summary || ''}</div>`;
+  panel.appendChild(overall);
+
+  // Cluster results
+  (result.clusters || []).forEach(cluster => {
+    const score = parseInt(cluster.readinessScore) || 0;
+    const col = score >= 75 ? '#7AAA40' : score >= 50 ? '#C8A040' : score >= 25 ? '#C87840' : '#C86040';
+    const rplClass = cluster.rplLikelihood === 'High' ? 'rpl-high' : cluster.rplLikelihood === 'Medium' ? 'rpl-medium' : 'rpl-low';
+
+    const card = document.createElement('div');
+    card.className = 'cluster-result';
+    card.innerHTML = `
+      <div class="cluster-result-header">
+        <div class="cluster-result-title">${cluster.title}
+          <span class="rpl-badge ${rplClass}">RPL: ${cluster.rplLikelihood}</span>
+        </div>
+        <div class="cluster-score-bar-wrap">
+          <div class="cluster-score-bar" style="width:${score}%;background:${col}"></div>
+        </div>
+        <div class="cluster-score-pct" style="color:${col}">${score}%</div>
+      </div>
+      <div class="cluster-result-body">
+        <div class="result-row">
+          <div class="result-box">
+            <div class="result-box-label">Strengths identified</div>
+            <ul>${(cluster.strengths||[]).map(s=>`<li>${s}</li>`).join('')}</ul>
+          </div>
+          <div class="result-box">
+            <div class="result-box-label">Gaps to address</div>
+            <ul>${(cluster.gaps||[]).map(g=>`<li>${g}</li>`).join('')}</ul>
+          </div>
+        </div>
+        <div class="cluster-recommendation">${cluster.recommendation||''}</div>
+      </div>`;
+    panel.appendChild(card);
+  });
+
+  // Priority actions
+  if (result.priorityActions?.length) {
+    const pa = document.createElement('div');
+    pa.className = 'priority-actions';
+    pa.innerHTML = '<h4>PRIORITY ACTIONS</h4>';
+    result.priorityActions.forEach((action, i) => {
+      const row = document.createElement('div');
+      row.className = 'action-item';
+      row.innerHTML = `<span class="action-num">${i+1}</span><span class="action-text">${action}</span>`;
+      pa.appendChild(row);
+    });
+    panel.appendChild(pa);
+  }
+
+  // Study recommendation
+  if (result.studyRecommendation) {
+    const sr = document.createElement('div');
+    sr.className = 'study-rec';
+    sr.innerHTML = `<div class="study-rec-label">Recommended Qualification Pathway</div><div class="study-rec-text">${result.studyRecommendation}</div>`;
+    panel.appendChild(sr);
+  }
+
+  // RPL
+  if (result.rplRecommendation) {
+    const rpl = document.createElement('div');
+    rpl.className = 'study-rec';
+    rpl.style.marginTop = '10px';
+    rpl.innerHTML = `<div class="study-rec-label">RPL Recommendation</div><div class="study-rec-text">${result.rplRecommendation}</div>`;
+    panel.appendChild(rpl);
+  }
+
+  const disc = document.createElement('p');
+  disc.style.cssText = 'font-family:sans-serif;font-size:11px;color:#4A3818;margin-top:16px;line-height:1.6;text-align:center;';
+  disc.textContent = 'This result is based on your self-reported responses. A registered RTO conducts formal skills recognition assessments.';
+  panel.appendChild(disc);
+}
+
+function resetForm() {
+  document.getElementById('resultCard').classList.remove('visible');
+  document.getElementById('formCard').style.display = 'block';
+  document.getElementById('formCard').style.opacity = '1';
+  document.getElementById('submitBtn').disabled = false;
+  document.getElementById('errorMsg').classList.remove('visible');
+  document.getElementById('resultsTab').style.display = 'none';
+  appState = { name:'', assessmentQuestions:null, tgaResults:null, responses:{}, scored:false };
+  switchTab('chart');
+}
+</script>
+</body>
+</html>
